@@ -1,6 +1,18 @@
 const PEER_PREFIX = "bor_room_";
 const HOST_CODE_LENGTH = 4;
 const HOST_CREATE_RETRIES = 8;
+const PEER_OPTIONS = {
+  host: "0.peerjs.com",
+  port: 443,
+  path: "/",
+  secure: true,
+  config: {
+    iceServers: [
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:global.stun.twilio.com:3478" }
+    ]
+  }
+};
 
 const state = {
   role: null,
@@ -58,10 +70,10 @@ const redCountEl = document.getElementById("redCount");
 const totalCountEl = document.getElementById("totalCount");
 
 function getOrCreateClientId() {
-  let id = localStorage.getItem("bor_client_id");
+  let id = sessionStorage.getItem("bor_client_id");
   if (!id) {
     id = makeId("u");
-    localStorage.setItem("bor_client_id", id);
+    sessionStorage.setItem("bor_client_id", id);
   }
   return id;
 }
@@ -365,34 +377,52 @@ function removePlayerConnection(conn) {
   setGameMessage("A player left the room.");
 }
 
+function registerIncomingPlayer(conn, metadata = {}) {
+  const requestedId = String(metadata.playerId || conn.peer || makeId("p"));
+  const playerName = sanitizeName(metadata.name || "Player") || "Player";
+  const playerId =
+    requestedId === state.clientId ? `${requestedId}_${Math.random().toString(16).slice(2, 6)}` : requestedId;
+
+  const existingConn = state.connections.get(playerId);
+  if (existingConn && existingConn !== conn) {
+    try {
+      existingConn.close();
+    } catch {
+      // ignore
+    }
+  }
+
+  conn.playerId = playerId;
+  state.connections.set(playerId, conn);
+  state.players[playerId] = {
+    id: playerId,
+    name: playerName,
+    role: "player"
+  };
+
+  sendRoomStateToPlayer(conn, playerId);
+  broadcastRoomState();
+  setGameMessage(`${playerName} joined the room.`);
+}
+
 function handleHostIncomingConnection(conn) {
+  conn.on("open", () => {
+    if (conn.playerId) return;
+    const metadata = conn.metadata && typeof conn.metadata === "object" ? conn.metadata : {};
+    if (metadata.type === "join") {
+      registerIncomingPlayer(conn, metadata);
+    }
+  });
+
   conn.on("data", (payload) => {
     if (!payload || typeof payload !== "object") return;
 
     if (payload.type === "join") {
-      const playerId = String(payload.playerId || conn.peer || makeId("p"));
-      const playerName = sanitizeName(payload.name || "Player") || "Player";
-
-      const existingConn = state.connections.get(playerId);
-      if (existingConn && existingConn !== conn) {
-        try {
-          existingConn.close();
-        } catch {
-          // ignore
-        }
+      if (conn.playerId) {
+        sendRoomStateToPlayer(conn, conn.playerId);
+      } else {
+        registerIncomingPlayer(conn, payload);
       }
-
-      conn.playerId = playerId;
-      state.connections.set(playerId, conn);
-      state.players[playerId] = {
-        id: playerId,
-        name: playerName,
-        role: "player"
-      };
-
-      sendRoomStateToPlayer(conn, playerId);
-      broadcastRoomState();
-      setGameMessage(`${playerName} joined the room.`);
       return;
     }
 
@@ -485,7 +515,7 @@ async function createHostPeer() {
   for (let i = 0; i < HOST_CREATE_RETRIES; i += 1) {
     const roomCode = generateRoomCode();
     const peerId = `${PEER_PREFIX}${roomCode}`;
-    const peer = new Peer(peerId);
+    const peer = new Peer(peerId, PEER_OPTIONS);
 
     try {
       await waitForPeerOpen(peer);
@@ -557,12 +587,17 @@ async function createRoom() {
 async function connectToHost(roomCode) {
   requirePeerJs();
 
-  const peer = new Peer();
+  const peer = new Peer(undefined, PEER_OPTIONS);
   await waitForPeerOpen(peer);
 
   const hostPeerId = `${PEER_PREFIX}${roomCode}`;
   const conn = peer.connect(hostPeerId, {
-    reliable: true
+    reliable: true,
+    metadata: {
+      type: "join",
+      playerId: state.clientId,
+      name: state.name
+    }
   });
 
   await waitForConnectionOpen(conn);
@@ -612,11 +647,16 @@ async function joinRoom() {
     });
 
     enterRoom();
-    sendMessage(conn, {
-      type: "join",
-      playerId: state.clientId,
-      name
-    });
+    // Keep a data-message join as fallback for environments that drop metadata.
+    setTimeout(() => {
+      if (state.hostConn && state.hostConn.open) {
+        sendMessage(state.hostConn, {
+          type: "join",
+          playerId: state.clientId,
+          name
+        });
+      }
+    }, 150);
     setGameMessage("Connected. Waiting for host.");
   } catch (error) {
     console.error(error);
@@ -767,4 +807,4 @@ window.addEventListener("beforeunload", () => {
 
 showScreen("start");
 renderChoiceButtons();
-setStartMessage("Ready. Host creates a room code, players join with that code.");
+setStartMessage("Ready. Host creates a room code, players join with that code. Keep host page open.");
