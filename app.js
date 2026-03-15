@@ -1,5 +1,5 @@
-const FORMSPREE_ENDPOINT = "https://formspree.io/f/YOUR_FORMSPREE_ENDPOINT";
-const FORMSPREE_DASHBOARD_LINK = "https://formspree.io/forms/YOUR_FORM_ID/submissions";
+const FORMSPREE_ENDPOINT = "https://formspree.io/f/xwvrnyyg";
+const FORMSPREE_DASHBOARD_LINK = "https://formspree.io/forms/xwvrnyyg/submissions";
 
 const state = {
   role: null,
