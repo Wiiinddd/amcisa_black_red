@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Black or Red - Formspree Version</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <h1>Black or Red</h1>
+      <p class="subtitle">Static GitHub Pages version using Formspree</p>
+    </header>
+
+    <main>
+      <!-- Start -->
+      <section id="startScreen" class="card screen active">
+        <h2>Choose your role</h2>
+        <div class="role-actions">
+          <button id="hostModeBtn" class="primary">Host</button>
+          <button id="joinModeBtn" class="secondary">Join</button>
+        </div>
+
+        <div id="hostForm" class="form hidden">
+          <label>
+            Host name
+            <input id="hostNameInput" type="text" maxlength="30" placeholder="Enter host name" />
+          </label>
+          <button id="createHostSessionBtn" class="primary">Create Room</button>
+        </div>
+
+        <div id="joinForm" class="form hidden">
+          <label>
+            Your name
+            <input id="playerNameInput" type="text" maxlength="30" placeholder="Enter your name" />
+          </label>
+          <label>
+            Room code
+            <input id="joinRoomCodeInput" type="text" maxlength="6" placeholder="ABC123" />
+          </label>
+          <label>
+            Current question
+            <input id="joinQuestionInput" type="text" maxlength="200" placeholder="Enter the host's current question" />
+          </label>
+          <button id="joinSessionBtn" class="primary">Join</button>
+        </div>
+
+        <p id="startMessage" class="message"></p>
+      </section>
+
+      <!-- Host Screen -->
+      <section id="hostScreen" class="screen hidden">
+        <div class="grid">
+          <div class="card">
+            <h2>Host Info</h2>
+            <p><strong>Name:</strong> <span id="hostNameLabel">-</span></p>
+            <p><strong>Room Code:</strong> <span id="hostRoomCodeLabel">-</span></p>
+          </div>
+
+          <div class="card">
+            <h2>Instructions</h2>
+            <ol class="instructions">
+              <li>Tell players your room code.</li>
+              <li>Ask your question out loud or share it manually.</li>
+              <li>Players submit their answers.</li>
+              <li>Open Formspree dashboard to count Black/Red submissions.</li>
+            </ol>
+          </div>
+
+          <div class="card wide">
+            <h2>Ask a Question</h2>
+            <label>
+              Question
+              <input id="hostQuestionInput" type="text" maxlength="200" placeholder="Type your question" />
+            </label>
+            <div class="host-buttons">
+              <button id="saveQuestionBtn" class="primary">Set Current Question</button>
+              <button id="copyHostInfoBtn" class="secondary">Copy Room + Question</button>
+            </div>
+            <p class="message" id="hostQuestionStatus"></p>
+            <div class="question-box">
+              <strong>Current Question:</strong>
+              <p id="hostCurrentQuestion">No question set yet.</p>
+            </div>
+          </div>
+
+          <div class="card wide">
+            <h2>Calculate Results</h2>
+            <p>
+              With Formspree-only, results cannot be securely calculated in-app on GitHub Pages.
+              Open your Formspree submissions dashboard and count answers for this room code.
+            </p>
+            <a id="formspreeDashboardLink" class="dashboard-link" href="#" target="_blank" rel="noopener">
+              Open Formspree Dashboard
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Player Screen -->
+      <section id="playerScreen" class="screen hidden">
+        <div class="grid">
+          <div class="card">
+            <h2>Player Info</h2>
+            <p><strong>Name:</strong> <span id="playerNameLabel">-</span></p>
+            <p><strong>Room Code:</strong> <span id="playerRoomCodeLabel">-</span></p>
+          </div>
+
+          <div class="card">
+            <h2>Question</h2>
+            <p id="playerQuestionText" class="question-text">No question entered.</p>
+          </div>
+
+          <div class="card wide">
+            <h2>Choose One</h2>
+            <div class="choice-buttons">
+              <button id="blackBtn" class="choice black">Black</button>
+              <button id="redBtn" class="choice red">Red</button>
+            </div>
+            <p id="choiceStatus" class="message">Choose Black or Red.</p>
+          </div>
+
+          <div class="card wide">
+            <h2>Submit Answer</h2>
+            <form id="voteForm">
+              <input type="hidden" name="role" value="player" />
+              <input type="hidden" name="playerName" id="formPlayerName" />
+              <input type="hidden" name="roomCode" id="formRoomCode" />
+              <input type="hidden" name="question" id="formQuestion" />
+              <input type="hidden" name="choice" id="formChoice" />
+
+              <button id="submitVoteBtn" type="submit" class="primary">Submit Vote</button>
+            </form>
+            <p id="submitStatus" class="message"></p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
